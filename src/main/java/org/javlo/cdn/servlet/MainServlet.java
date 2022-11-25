@@ -195,6 +195,7 @@ public class MainServlet extends HttpServlet {
 									cache = getInCache(host, uri);
 									if (cache == null) {
 										String sourceUrl = UrlHelper.mergePath(urlHost, uri);
+										sourceUrl = UrlHelper.addParam(sourceUrl, "ts", ""+System.currentTimeMillis(), false);
 										URL url = new URL(sourceUrl);
 										InputStream in = null;
 										try {

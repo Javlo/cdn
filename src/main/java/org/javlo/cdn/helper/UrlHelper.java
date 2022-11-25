@@ -1,6 +1,7 @@
 package org.javlo.cdn.helper;
 
 import org.apache.commons.lang3.StringUtils;
+import org.owasp.encoder.Encode;
 
 public class UrlHelper {
 	
@@ -12,6 +13,25 @@ public class UrlHelper {
 			}
 		}
 		return outPath.toString();
+	}
+	
+	public static String addParam(String url, String name, String value, boolean encode) {
+		if (url == null) {
+			return null;
+		}
+		if (encode) {
+			if (url.contains("?")) {
+				return url = url + '&' + name + '=' + Encode.forUriComponent(StringHelper.neverNull(value));
+			} else {
+				return url = url + '?' + name + '=' + Encode.forUriComponent(StringHelper.neverNull(value));
+			}
+		} else {
+			if (url.contains("?")) {
+				return url = url + '&' + name + '=' + StringHelper.neverNull(value);
+			} else {
+				return url = url + '?' + name + '=' + StringHelper.neverNull(value);
+			}
+		}
 	}
 	
 	/**

@@ -2,7 +2,7 @@
 
 ## instance for create a node of content delivery network
 
-> module to be installed on a J2EE server (tomcat for example)
+module to be installed on a J2EE server (tomcat for example)
 
 ### file structure
 

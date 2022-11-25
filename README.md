@@ -20,4 +20,11 @@ a host is defined by a properties file:
 
 the properties file contains at least the value `url.target` which gives the source url to use the cdn.
 
-> example: `url.target=https://www.javlo.org/`
+the value `code.reset` contains the code for release the cache of this host.
+
+##### example: 
+
+```
+url.target=https://www.javlo.org/
+code.reset=qsdk12fjoi59dkk1
+```

@@ -30,7 +30,7 @@ public class MainServlet extends HttpServlet {
 
 	private static Logger logger = Logger.getLogger(MainServlet.class.getName());
 
-	private static final String VERSION = "A 0.0.2";
+	private static final String VERSION = "B 0.0.4";
 	private static Map<String, Properties> config = new HashMap<>();
 
 	public static File CONFIG_FOLDER = new File(System.getProperty("user.home") + "/etc/javlo_cdn");
@@ -59,20 +59,42 @@ public class MainServlet extends HttpServlet {
 	private static final File createFileCache(String host, String uri, Boolean compress) {
 		File file = new File(DATA_FOLDER.getAbsolutePath() + '/' + StringHelper.createFileName(host) + '/' + StringHelper.createFileName(uri) + "." + StringHelper.getFileExtension(uri).toLowerCase());
 		if (compress == null && !file.exists()) {
-			File cFile = new File(DATA_FOLDER.getAbsolutePath() + '/' + StringHelper.createFileName(host) + '/' + StringHelper.createFileName(uri) + "." + StringHelper.getFileExtension(uri).toLowerCase()+".gzip");
+			File cFile = new File(DATA_FOLDER.getAbsolutePath() + '/' + StringHelper.createFileName(host) + '/' + StringHelper.createFileName(uri) + "." + StringHelper.getFileExtension(uri).toLowerCase() + ".gzip");
 			if (cFile.exists()) {
 				return cFile;
 			}
 		}
 		if (compress != null && compress) {
-			file = new File(file.getAbsolutePath()+".gzip");
+			file = new File(file.getAbsolutePath() + ".gzip");
 		}
 		if (!file.getParentFile().exists()) {
 			file.getParentFile().mkdirs();
 		}
 		return file;
 	}
-	
+
+	private void reset(String host) throws IOException {
+		File file = new File(DATA_FOLDER.getAbsolutePath() + '/' + StringHelper.createFileName(host));
+		logger.info("delete cache : " + file);
+		File fileDest = new File(DATA_FOLDER.getAbsolutePath() + "/___DELETE_ME___" + StringHelper.createFileName(host));
+		file.renameTo(fileDest);
+		deleteDirectoryRecursion(fileDest);
+	}
+
+	private static final void deleteDirectoryRecursion(File file) throws IOException {
+		if (file.isDirectory()) {
+			File[] entries = file.listFiles();
+			if (entries != null) {
+				for (File entry : entries) {
+					deleteDirectoryRecursion(entry);
+				}
+			}
+		}
+		if (!file.delete()) {
+			throw new IOException("Failed to delete " + file);
+		}
+	}
+
 	private static boolean isCompress(File file) {
 		return file.getAbsolutePath().endsWith(".gzip");
 	}
@@ -95,11 +117,13 @@ public class MainServlet extends HttpServlet {
 				compress = true;
 			}
 		}
-		OutputStream out=null;
+		OutputStream out = null;
 		File cacheFile = createFileCache(host, uri, compress);
 		try {
 			out = new FileOutputStream(cacheFile);
-			if (compress) {out = new GZIPOutputStream(out);}
+			if (compress) {
+				out = new GZIPOutputStream(out);
+			}
 			ResourceHelper.writeStreamToStream(in, out);
 		} finally {
 			out.close();
@@ -162,45 +186,49 @@ public class MainServlet extends HttpServlet {
 				if (config != null) {
 					String urlHost = config.getProperty("url.target");
 					if (urlHost != null) {
-						CacheReturn cache = getInCache(host, uri);
-						if (cache == null) {
-							synchronized (this) {
-								cache = getInCache(host, uri);
-								if (cache == null) {
-									String sourceUrl = UrlHelper.mergePath(urlHost, uri);
-									URL url = new URL(sourceUrl);
-									InputStream in = null;
-									try {
-										URLConnection conn = url.openConnection();
-										in = conn.getInputStream();
-										logger.info("add in cache : " + sourceUrl);
-										cache = putInCache(host, uri, in);
-									} catch (Exception e) {
-										e.printStackTrace();
-										logger.severe("error connection : " + url);
-									} finally {
-										ResourceHelper.safeClose(in);
+						if (uri.equals("/" + config.get("code.reset"))) {
+							reset(host);
+						} else {
+							CacheReturn cache = getInCache(host, uri);
+							if (cache == null) {
+								synchronized (this) {
+									cache = getInCache(host, uri);
+									if (cache == null) {
+										String sourceUrl = UrlHelper.mergePath(urlHost, uri);
+										URL url = new URL(sourceUrl);
+										InputStream in = null;
+										try {
+											URLConnection conn = url.openConnection();
+											in = conn.getInputStream();
+											logger.info("add in cache : " + sourceUrl);
+											cache = putInCache(host, uri, in);
+										} catch (Exception e) {
+											e.printStackTrace();
+											logger.severe("error connection : " + url);
+										} finally {
+											ResourceHelper.safeClose(in);
+										}
 									}
 								}
 							}
-						}
-						if (cache != null) {
-							if (cache.getMimeType() != null) {
-								response.setContentType(cache.getMimeType());
+							if (cache != null) {
+								if (cache.getMimeType() != null) {
+									response.setContentType(cache.getMimeType());
+								}
+								String cleanHost = urlHost;
+								if (cleanHost.endsWith("/")) {
+									cleanHost = cleanHost.substring(0, cleanHost.length() - 1);
+								}
+								if (cache.isCompress()) {
+									response.addHeader("Content-Encoding", "gzip");
+								}
+								response.addHeader("Access-Control-Allow-Origin", cleanHost);
+								response.addHeader("Cache-control", "max-age=" + (60 * 60 * 24 * 30) + ", public"); // 30 days
+								ResourceHelper.writeStreamToStream(cache.getInputStream(), response.getOutputStream());
+								ResourceHelper.safeClose(cache.getInputStream());
+							} else {
+								response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 							}
-							String cleanHost = urlHost;
-							if (cleanHost.endsWith("/")) {
-								cleanHost = cleanHost.substring(0, cleanHost.length() - 1);
-							}
-							if (cache.isCompress()) {
-								response.addHeader("Content-Encoding", "gzip");
-							}
-							response.addHeader("Access-Control-Allow-Origin", cleanHost);
-							response.addHeader("Cache-control", "max-age=" + (60 * 60 * 24 * 30) + ", public"); // 30 days
-							ResourceHelper.writeStreamToStream(cache.getInputStream(), response.getOutputStream());
-							ResourceHelper.safeClose(cache.getInputStream());
-						} else {
-							response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 						}
 					} else {
 						logger.severe("bad config file (no url.target) : " + host);

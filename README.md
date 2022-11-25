@@ -8,7 +8,7 @@ module to be installed on a J2EE server (tomcat for example)
 
 #### `~/data/javlo_cdn` : contains the cache of files.
 
-the folder can be hot deleted to renew the cache
+The folder can be hot deleted to **renew the cache**.
 
 #### `~/etc/javlo_cdn` : contains the definition of the hosts which can use the cdn/
 
@@ -21,5 +21,3 @@ a host is defined by a properties file:
 the properties file contains at least the value `url.target` which gives the source url to use the cdn.
 
 > example: `url.target=https://www.javlo.org/`
-
-Translated with www.DeepL.com/Translator (free version)

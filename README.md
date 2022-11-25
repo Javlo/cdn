@@ -14,7 +14,7 @@ The folder can be hot deleted to **renew the cache**.
 
 a host is defined by a properties file:
 
-`#context#.properties`: will be accessed by : `://#host of cdn#/#context#/#uri of resource#
+`#context#.properties`: will be accessed by : `://#host of cdn#/#context#/#uri of resource#`
 
 > example: javloorg.properties access: `://cdn.javlo.org/javloorg/img/image.png`
 

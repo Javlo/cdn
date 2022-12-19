@@ -7,11 +7,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
+import java.util.Objects;
 
 public class ResourceHelper {
 
@@ -20,8 +25,7 @@ public class ResourceHelper {
 	/**
 	 * create a static logger.
 	 */
-	protected static java.util.logging.Logger logger = java.util.logging.Logger
-			.getLogger(ResourceHelper.class.getName());
+	protected static java.util.logging.Logger logger = java.util.logging.Logger.getLogger(ResourceHelper.class.getName());
 
 	public static final String getFileExtensionToMineType(String ext) {
 		ext = ext.trim().toLowerCase();
@@ -102,11 +106,13 @@ public class ResourceHelper {
 		}
 		return "application/octet-stream";
 	}
-	
+
 	/**
-	 * Close streams, writers, readers, etc without any exception even if they are <code>null</code>.
+	 * Close streams, writers, readers, etc without any exception even if they are
+	 * <code>null</code>.
 	 * 
-	 * @param closeables the objects to close
+	 * @param closeables
+	 *            the objects to close
 	 */
 	public static void safeClose(Closeable... closeables) {
 		for (Closeable closeable : closeables) {
@@ -196,6 +202,42 @@ public class ResourceHelper {
 			byteReaded = in.read(buffer);
 		}
 		return size;
+	}
+	
+	public static void main(String[] args) throws Exception {
+		System.out.println(">>>>>>>>> ResourceHelper.main : START"); //TODO: remove debug trace
+		long start = System.currentTimeMillis();
+		File file = new File("c:/trans/ULB offre technique.pdf");
+		String sha;
+		try (InputStream in = new FileInputStream(file)) {
+			sha = sha512(in);
+		}
+		System.out.println(">>>>>>>>> ResourceHelper.main : sha = "+sha); //TODO: remove debug trace
+		System.out.println(">>>>>>>>> ResourceHelper.main : time = "+((System.currentTimeMillis()-start))+" msec."); //TODO: remove debug trace
+	}
+	
+	public static String sha512(final InputStream in) throws IOException, IllegalArgumentException {
+		return sha(in, "SHA-512");
+	}
+	
+	public static String sha256(final InputStream in) throws IOException, IllegalArgumentException {
+		return sha(in, "SHA-256");
+	}
+	
+	private static String sha(final InputStream in, String algo) throws IOException, IllegalArgumentException {
+		final int BUFFER_SIZE = 1024 * 1024;
+		Objects.requireNonNull(in);
+		try {
+			final byte[] buf = new byte[BUFFER_SIZE];
+			final MessageDigest messageDigest = MessageDigest.getInstance(algo);
+			int bytesRead;
+			while ((bytesRead = in.read(buf)) != -1) {
+				messageDigest.update(buf, 0, bytesRead);
+			}
+			return new String(Base64.getEncoder().encode(messageDigest.digest()));
+		} catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException("SHA-256 hashing algorithm unknown in this VM.", e);
+		}
 	}
 
 }

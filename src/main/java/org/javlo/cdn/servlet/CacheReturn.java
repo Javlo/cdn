@@ -1,17 +1,20 @@
 package org.javlo.cdn.servlet;
 
+import java.io.File;
 import java.io.InputStream;
 
 public class CacheReturn {
 	private String mimeType;
 	private InputStream inputStream;
 	private boolean compress;
+	private File file;
 	
-	public CacheReturn(String mimeType, InputStream out, boolean compress) {
+	public CacheReturn(String mimeType, InputStream out, boolean compress, File file) {
 		super();
 		this.mimeType = mimeType;
 		this.inputStream = out;
 		this.compress = compress;
+		this.setFile(file);
 	}
 	public String getMimeType() {
 		return mimeType;
@@ -30,5 +33,11 @@ public class CacheReturn {
 	}
 	public void setCompress(boolean compress) {
 		this.compress = compress;
+	}
+	public File getFile() {
+		return file;
+	}
+	public void setFile(File file) {
+		this.file = file;
 	}
 }
